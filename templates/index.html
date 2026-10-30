@@ -1,0 +1,143 @@
+<!-- File: templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Summarizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 max-w-3xl">
+        <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">AI Study Summarizer</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex space-x-4 mb-4">
+                <button id="textTab" class="tab-btn active px-4 py-2 bg-blue-600 text-white rounded">
+                    Paste Text
+                </button>
+                <button id="fileTab" class="tab-btn px-4 py-2 bg-gray-200 rounded">
+                    Upload File
+                </button>
+            </div>
+            
+            <div id="textInput" class="input-section">
+                <textarea id="inputText" rows="10" class="w-full p-3 border rounded" 
+                placeholder="Paste your notes here..."></textarea>
+            </div>
+            
+            <div id="fileInput" class="input-section hidden">
+                <div class="border-2 border-dashed border-gray-300 p-8 text-center rounded">
+                    <input type="file" id="fileUpload" accept=".pdf,.txt" class="hidden">
+                    <button id="uploadBtn" class="px-4 py-2 bg-blue-100 text-blue-600 rounded">
+                        Choose PDF or Text File
+                    </button>
+                    <p class="mt-2 text-gray-500" id="fileName">No file selected</p>
+                </div>
+            </div>
+            
+            <button id="summarizeBtn" class="w-full py-3 bg-blue-600 text-white rounded-lg mt-4">
+                Generate Summary
+            </button>
+        </div>
+        
+        <div id="summaryContainer" class="bg-white rounded-lg shadow-md p-6 hidden">
+            <h2 class="text-xl font-semibold mb-4">Summary</h2>
+            <div id="summaryOutput" class="p-3 bg-gray-50 rounded whitespace-pre-wrap"></div>
+            <button id="copyBtn" class="mt-4 px-4 py-2 bg-gray-200 rounded">
+                Copy to Clipboard
+            </button>
+        </div>
+        
+        <div id="errorMsg" class="text-red-500 mt-3 hidden"></div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.getElementById('fileTab').addEventListener('click', () => {
+            document.querySelectorAll('.input-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('fileInput').classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200');
+            });
+            document.getElementById('fileTab').classList.add('bg-blue-600', 'text-white');
+        });
+
+        document.getElementById('textTab').addEventListener('click', () => {
+            document.querySelectorAll('.input-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('textInput').classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200');
+            });
+            document.getElementById('textTab').classList.add('bg-blue-600', 'text-white');
+        });
+
+        // File upload display
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileUpload').click();
+        });
+
+        document.getElementById('fileUpload').addEventListener('change', (e) => {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
+            document.getElementById('fileName').textContent = fileName;
+        });
+
+        // Summarize button
+        document.getElementById('summarizeBtn').addEventListener('click', async () => {
+            const summarizeBtn = document.getElementById('summarizeBtn');
+            const originalText = summarizeBtn.textContent;
+            summarizeBtn.disabled = true;
+            summarizeBtn.textContent = 'Processing...';
+            summarizeBtn.classList.add('opacity-50');
+            
+            document.getElementById('errorMsg').classList.add('hidden');
+            
+            try {
+                const formData = new FormData();
+                
+                if (document.getElementById('fileInput').classList.contains('hidden')) {
+                    // Text input
+                    const text = document.getElementById('inputText').value;
+                    if (!text.trim()) throw new Error('Please enter some text');
+                    formData.append('text', text);
+                } else {
+                    // File upload
+                    const file = document.getElementById('fileUpload').files[0];
+                    if (!file) throw new Error('Please select a file');
+                    formData.append('file', file);
+                }
+                
+                const response = await fetch('/summarize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('summaryOutput').textContent = data.summary;
+                    document.getElementById('summaryContainer').classList.remove('hidden');
+                } else {
+                    throw new Error(data.error || 'Error generating summary');
+                }
+            } catch (error) {
+                document.getElementById('errorMsg').textContent = error.message;
+                document.getElementById('errorMsg').classList.remove('hidden');
+            } finally {
+                summarizeBtn.disabled = false;
+                summarizeBtn.textContent = originalText;
+                summarizeBtn.classList.remove('opacity-50');
+            }
+        });
+
+        // Copy button
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const summaryText = document.getElementById('summaryOutput').textContent;
+            navigator.clipboard.writeText(summaryText);
+            alert('Summary copied to clipboard!');
+        });
+    </script>
+</body>
+</html>
