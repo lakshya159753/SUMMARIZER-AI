@@ -20,7 +20,7 @@ if not api_key:
     )
 
 # Change the model in .env (GEMINI_MODEL=...) without touching the code.
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 # Safety cap so a huge PDF doesn't blow past the free-tier token limits.
 MAX_INPUT_CHARS = 200_000
